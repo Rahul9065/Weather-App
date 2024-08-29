@@ -12,6 +12,11 @@ import retrofit2.converter.gson.GsonConverterFactory
 import java.text.SimpleDateFormat
 import java.util.Date
 import java.util.Locale
+import android.content.Context
+import android.net.ConnectivityManager
+import android.net.NetworkCapabilities
+import androidx.appcompat.app.AlertDialog
+import com.google.android.material.snackbar.Snackbar
 
 // key = 77898191e71fe22f49bfa28c51c79cfb
 class MainActivity : AppCompatActivity() {
@@ -27,7 +32,13 @@ class MainActivity : AppCompatActivity() {
         binding.day.text = dayName(System.currentTimeMillis())
         binding.date.text = date()
 
-        fetchWeatherData("  ")
+        // Check Internet connection
+        if (isNetworkAvailable(this)) {
+            fetchWeatherData(" ")
+        } else {
+          //       showNoInternetMessage()
+            showNoInternetDialog()
+        }
         searchCity()
     }
 
@@ -36,7 +47,12 @@ class MainActivity : AppCompatActivity() {
         searchView.setOnQueryTextListener(object : SearchView.OnQueryTextListener {
             override fun onQueryTextSubmit(query: String?): Boolean {
                 if (query != null) {
-                    fetchWeatherData(query)
+                    if (isNetworkAvailable(this@MainActivity)) {
+                        fetchWeatherData(query)
+                    } else {
+                       // showNoInternetMessage()
+                        showNoInternetDialog()
+                    }
                 }
                 return true
 
@@ -50,6 +66,25 @@ class MainActivity : AppCompatActivity() {
 
     }
 
+    private fun isNetworkAvailable(context: Context): Boolean {
+        val connectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+        val network = connectivityManager.activeNetwork ?: return false
+        val networkCapabilities = connectivityManager.getNetworkCapabilities(network) ?: return false
+        return networkCapabilities.hasCapability(NetworkCapabilities.NET_CAPABILITY_INTERNET)
+
+    }
+
+    private fun showNoInternetDialog() {
+        AlertDialog.Builder(this)
+            .setTitle("No Internet Connection")
+            .setMessage("Please check your internet connection and try again.")
+            .setPositiveButton("OK", null)
+            .show()
+    }
+
+//    private fun showNoInternetMessage() {
+//        Snackbar.make(binding.root, "No internet connection", Snackbar.LENGTH_LONG).show()
+//    }
     private fun fetchWeatherData(cityName: String) {
         val retrofit = Retrofit.Builder()
             .addConverterFactory(GsonConverterFactory.create())
